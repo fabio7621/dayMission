@@ -1,13 +1,49 @@
-import { ref, computed } from 'vue'
+import { ref, computed, watch } from 'vue'
 import { HOURS } from '../constants.js'
 
 let uid = 0
 
+const STORAGE_KEY = 'dayMission_slots'
+
+function todayStr() {
+  return new Date().toISOString().slice(0, 10)
+}
+
+function loadFromStorage() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY)
+    if (!raw) return null
+    const { date, slots } = JSON.parse(raw)
+    if (date !== todayStr()) {
+      localStorage.removeItem(STORAGE_KEY)
+      return null
+    }
+    return slots
+  } catch {
+    return null
+  }
+}
+
+function initSlots() {
+  const saved = loadFromStorage()
+  if (saved) {
+    // restore uid counter above the max saved id
+    const maxId = saved.reduce((m, s) => Math.max(m, s.id), -1)
+    uid = maxId + 1
+    return saved
+  }
+  return HOURS.map((h) => ({ id: uid++, startHour: h, task: null }))
+}
+
 export function useSlots() {
-  const slots = ref(HOURS.map((h) => ({ id: uid++, startHour: h, task: null })))
+  const slots = ref(initSlots())
 
   const editingId = ref(null)
   const editValue = ref('')
+
+  watch(slots, (val) => {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({ date: todayStr(), slots: val }))
+  }, { deep: true })
 
   // ── Computed ──
 
