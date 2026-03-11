@@ -80,6 +80,18 @@ export function useSlots() {
 
   function onCellClick(row) {
     if (row.task) return
+    // 若有正在編輯的 slot，先 save 或 cancel
+    if (editingId.value !== null) {
+      const prev = slots.value.find((s) => s.id === editingId.value)
+      if (prev?.task) {
+        if (editValue.value.trim()) {
+          prev.task = { ...prev.task, name: editValue.value.trim() }
+        } else {
+          prev.task = null
+        }
+      }
+      editingId.value = null
+    }
     const slot = slots.value.find((s) => s.id === row.id)
     if (!slot) return
     slot.task = { name: '', done: false, duration: 1 }
