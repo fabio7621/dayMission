@@ -128,7 +128,47 @@ export function useSlots() {
 
   function deleteTask(row) {
     const slot = slots.value.find((s) => s.id === row.id)
-    if (slot) slot.task = null
+    if (!slot) return
+    const dur = slot.task?.duration ?? 1
+    slot.task = null
+    // 刪除任務後，移除它佔用的空白 placeholder slots
+    if (dur > 1) {
+      const idx = slots.value.findIndex((s) => s.id === row.id)
+      const arr = [...slots.value]
+      let removed = 0
+      while (removed < dur - 1 && arr[idx + 1]?.task === null) {
+        arr.splice(idx + 1, 1)
+        removed++
+      }
+      arr.forEach((s, i) => { s.startHour = HOURS[0] + i })
+      slots.value = arr
+    }
+  }
+
+  // resize 結束時呼叫：插入/移除空 slot 來推移後面的任務
+  function commitResize(slotId, newDur, oldDur) {
+    const diff = newDur - oldDur
+    if (diff === 0) return
+    const idx = slots.value.findIndex((s) => s.id === slotId)
+    if (idx < 0) return
+
+    const arr = [...slots.value]
+    if (diff > 0) {
+      // 拉長：在舊範圍末端插入空 slot，把後面任務往下推
+      for (let i = 0; i < diff; i++) {
+        arr.splice(idx + oldDur + i, 0, { id: uid++, startHour: 0, task: null })
+      }
+    } else {
+      // 縮短：移除多出的空 placeholder slots
+      let toRemove = -diff
+      const removeAt = idx + newDur
+      while (toRemove > 0 && arr[removeAt]?.task === null) {
+        arr.splice(removeAt, 1)
+        toRemove--
+      }
+    }
+    arr.forEach((s, i) => { s.startHour = HOURS[0] + i })
+    slots.value = arr
   }
 
   return {
@@ -146,5 +186,6 @@ export function useSlots() {
     cancelEdit,
     toggleDone,
     deleteTask,
+    commitResize,
   }
 }

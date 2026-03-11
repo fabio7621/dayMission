@@ -1,6 +1,6 @@
 import { SLOT_H } from '../constants.js'
 
-export function useResize(slots) {
+export function useResize(slots, onCommit) {
   let rsSlot = null
   let rsStartY = 0
   let rsStartDur = 1
@@ -16,6 +16,9 @@ export function useResize(slots) {
   }
 
   function stopResize() {
+    if (rsSlot?.task && onCommit) {
+      onCommit(rsSlot.id, rsSlot.task.duration, rsStartDur)
+    }
     rsSlot = null
     window.removeEventListener('mousemove', onResize)
     window.removeEventListener('mouseup', stopResize)

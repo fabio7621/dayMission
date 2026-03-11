@@ -22,9 +22,10 @@ const {
   cancelEdit,
   toggleDone,
   deleteTask,
+  commitResize,
 } = useSlots()
 
-const { startResize } = useResize(slots)
+const { startResize } = useResize(slots, commitResize)
 
 const scheduleEl = ref(null)
 
